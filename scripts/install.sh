@@ -10,6 +10,7 @@ BUILD_DIR="$PROJECT_DIR/build"
 DYLIB_NAME="libCleanShotCN.dylib"
 PREF_PLIST="$HOME/Library/Preferences/$BUNDLE_ID.plist"
 RESET_TCC="${RESET_TCC:-0}"
+BACKUP="${BACKUP:-1}"
 
 if [[ ! -d "$APP_PATH" ]]; then
   echo "找不到 CleanShot X：$APP_PATH"
@@ -33,9 +34,12 @@ TARGET_DYLIB="$MACOS_DIR/$DYLIB_NAME"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR="$PROJECT_DIR/backups/$STAMP"
 
-mkdir -p "$BUILD_DIR" "$BACKUP_DIR"
+mkdir -p "$BUILD_DIR"
+if [[ "$BACKUP" == "1" ]]; then
+  mkdir -p "$BACKUP_DIR"
+fi
 
-if [[ -f "$PREF_PLIST" ]]; then
+if [[ "$BACKUP" == "1" && -f "$PREF_PLIST" ]]; then
   echo "正在备份 CleanShot 设置..."
   cp -p "$PREF_PLIST" "$BACKUP_DIR/$BUNDLE_ID.pre-install.plist"
 fi
@@ -45,28 +49,25 @@ osascript -e 'tell application "CleanShot X" to quit' >/dev/null 2>&1 || true
 pkill -x "CleanShot X" >/dev/null 2>&1 || true
 sleep 1
 
-echo "正在备份 Info.plist..."
-cp -p "$INFO_PLIST" "$BACKUP_DIR/Info.plist"
-if [[ -f "$TARGET_DYLIB" ]]; then
-  cp -p "$TARGET_DYLIB" "$BACKUP_DIR/$DYLIB_NAME"
-fi
-if [[ -f "$PREF_PLIST" ]]; then
-  cp -p "$PREF_PLIST" "$BACKUP_DIR/$BUNDLE_ID.post-quit.plist"
+if [[ "$BACKUP" == "1" ]]; then
+  echo "正在备份 Info.plist..."
+  cp -p "$INFO_PLIST" "$BACKUP_DIR/Info.plist"
+  if [[ -f "$TARGET_DYLIB" ]]; then
+    cp -p "$TARGET_DYLIB" "$BACKUP_DIR/$DYLIB_NAME"
+  fi
+  if [[ -f "$PREF_PLIST" ]]; then
+    cp -p "$PREF_PLIST" "$BACKUP_DIR/$BUNDLE_ID.post-quit.plist"
+  fi
 fi
 
-ARCH_FLAGS=()
-case "$(uname -m)" in
-  arm64) ARCH_FLAGS=(-arch arm64) ;;
-  x86_64) ARCH_FLAGS=(-arch x86_64) ;;
-esac
-
-echo "正在编译汉化动态库..."
-clang -dynamiclib -fobjc-arc -fblocks "${ARCH_FLAGS[@]}" \
-  -framework AppKit -framework Foundation \
-  "$SRC" -o "$BUILD_DIR/$DYLIB_NAME"
+echo "正在编译汉化动态库和 SwiftUI 语言文件..."
+zsh "$SCRIPT_DIR/build.sh"
 
 echo "正在安装动态库..."
 cp -p "$BUILD_DIR/$DYLIB_NAME" "$TARGET_DYLIB"
+mkdir -p "$APP_PATH/Contents/Resources/zh-Hans.lproj"
+cp -p "$PROJECT_DIR/resources/zh-Hans.lproj/Localizable.strings" \
+  "$APP_PATH/Contents/Resources/zh-Hans.lproj/Localizable.strings"
 
 echo "正在写入启动注入配置..."
 /usr/libexec/PlistBuddy -c 'Delete :LSEnvironment' "$INFO_PLIST" >/dev/null 2>&1 || true
@@ -100,4 +101,8 @@ open -a "CleanShot X"
 echo
 echo "安装完成。"
 echo "如果系统提示权限，请重新允许 CleanShot X 的屏幕录制/辅助功能权限。"
-echo "备份位置：$BACKUP_DIR"
+if [[ "$BACKUP" == "1" ]]; then
+  echo "备份位置：$BACKUP_DIR"
+else
+  echo "按要求未创建备份。"
+fi

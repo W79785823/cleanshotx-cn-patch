@@ -23,6 +23,8 @@ sleep 1
 echo "正在移除汉化注入配置..."
 /usr/libexec/PlistBuddy -c 'Delete :LSEnvironment' "$INFO_PLIST" >/dev/null 2>&1 || true
 rm -f "$MACOS_DIR/$DYLIB_NAME"
+rm -f "$APP_PATH/Contents/Resources/zh-Hans.lproj/Localizable.strings"
+rmdir "$APP_PATH/Contents/Resources/zh-Hans.lproj" >/dev/null 2>&1 || true
 
 echo "正在重新签名..."
 codesign --force --deep --sign - "$APP_PATH"

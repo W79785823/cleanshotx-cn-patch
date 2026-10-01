@@ -1,10 +1,26 @@
 CleanShot X Chinese Patch
-Verified app version: CleanShot X 4.8.8
-Package date: 2026-05-21
-Patch revision: v4.8.8-cn.4
+Verified app version: CleanShot X 5.0.1 (02e6637)
+Verified environment: macOS 26.6.2, Apple Silicon / arm64
+Build deployment target: macOS 13.0 and later, host architecture
+Intel and other macOS versions: not tested in this revision
+Upstream verified app version: CleanShot X 4.8.8 (not retested)
+Package date: 2026-10-01
+Patch revision: v5.0.1-cn.1
+Translation keys: 2554 (including punctuation variants)
+Upstream: https://github.com/CodeApe-Xiaoyin/cleanshotx-cn-patch
+Public fork: https://github.com/W79785823/cleanshotx-cn-patch
+
+Coverage:
+- settings, shortcut labels, quick access context menus, and selected dialogs
+- untriggered errors, signed-in cloud screens, and future versions are not fully verified
 
 Files:
-- CleanShotCN.m: runtime translation source
+- CleanShotCN.m: AppKit runtime translation and shared dictionary
+- SwiftUIText.swift: SwiftUI display text and attributed text translation
+- SwiftUIInterpose.m: dyld interposition for SwiftUI Text constructors
+- export-strings.m: generate Chinese language resources
+- Localizable.strings: generated Chinese language resource
+- build.sh: build the library and export language resources without installing
 - install.sh: build and install patch
 - repair-preferences.sh: repair saved settings and shortcuts persistence
 - restart-shortcuts.sh: restart CleanShot shortcut registration
